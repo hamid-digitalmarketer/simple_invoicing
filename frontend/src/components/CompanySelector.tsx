@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import api, { getApiErrorMessage } from '../api/client';
 import ModalCloseButton from './ModalCloseButton';
@@ -13,7 +13,6 @@ import type {
 } from '../types/api';
 
 export default function CompanySelector() {
-  const queryClient = useQueryClient();
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const [companySwitchingId, setCompanySwitchingId] = useState<number | null>(null);
   const [companyError, setCompanyError] = useState('');

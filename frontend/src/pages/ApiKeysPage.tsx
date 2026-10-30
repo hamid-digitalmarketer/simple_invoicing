@@ -353,6 +353,7 @@ export default function ApiKeysPage() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
           danger
+          confirmDisabled={deleting}
         />
       )}
 
