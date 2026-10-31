@@ -13,7 +13,14 @@ import formatCurrency from '../utils/formatting';
 import { buildWhatsAppUrl, toWhatsAppNumber } from '../utils/phone';
 import { buildWhatsAppReminderMessage } from '../utils/whatsappReminder';
 import { downloadCsv } from '../utils/csv';
-import { formatInvoiceDateLabel, isOverdueInvoice, overdueLabel } from '../utils/invoiceDueDate.ts';
+import {
+  buildDueWindow,
+  formatInvoiceDateLabel,
+  isOverdueInvoice,
+  overdueLabel,
+  type DueFilterMode,
+} from '../utils/invoiceDueDate.ts';
+import { toIsoDate } from '../utils/dateRanges';
 import OverdueBadge from '../components/OverdueBadge';
 import DuesAgeingStrip from '../components/DuesAgeingStrip';
 import EmptyState from '../components/EmptyState';
@@ -23,39 +30,6 @@ import {
   sortDueInvoices,
   type InvoiceDueSort,
 } from '../utils/invoiceDuesSorting';
-
-type DueFilterMode = 'all' | 'overdue' | 'next7' | 'next15' | 'custom-days' | 'exact-date';
-
-function addDays(baseDate: Date, days: number) {
-  const next = new Date(baseDate);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function toIsoDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function buildDueWindow(mode: DueFilterMode, customDays: number, exactDate: string) {
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  switch (mode) {
-    case 'overdue':
-      return { dueDateTo: toIsoDate(addDays(startOfToday, -1)) };
-    case 'next7':
-      return { dueDateFrom: toIsoDate(startOfToday), dueDateTo: toIsoDate(addDays(startOfToday, 7)) };
-    case 'next15':
-      return { dueDateFrom: toIsoDate(startOfToday), dueDateTo: toIsoDate(addDays(startOfToday, 15)) };
-    case 'custom-days':
-      return { dueDateFrom: toIsoDate(startOfToday), dueDateTo: toIsoDate(addDays(startOfToday, Math.max(customDays, 0))) };
-    case 'exact-date':
-      return exactDate ? { dueDateFrom: exactDate, dueDateTo: exactDate } : {};
-    case 'all':
-    default:
-      return {};
-  }
-}
 
 const DUE_WINDOW_OPTIONS: { value: DueFilterMode; label: string }[] = [
   { value: 'overdue', label: 'Overdue' },
@@ -194,7 +168,7 @@ export default function InvoiceDuesPage() {
 
   function handleExportCsv() {
     downloadCsv(
-      `invoice_dues_${new Date().toISOString().slice(0, 10)}.csv`,
+      `invoice_dues_${toIsoDate(new Date())}.csv`,
       ['Customer', 'Invoice number', 'Invoice date', 'Due date', 'Total', 'Amount due'],
       sortedItems.map((invoice) => [
         invoice.ledger_name ?? '',
