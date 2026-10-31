@@ -94,11 +94,28 @@ def test_unfiltered_listing_returns_both(client, seeded):
     assert _numbers(result) == ["CN-2025-099", "CN-2026-001", "DN-2026-001"]
 
 
-def test_date_to_includes_the_whole_selected_day(client, seeded):
+def test_date_to_includes_the_whole_selected_day(client, db_session, seeded):
     """date_to=2026-06-02 must cover notes created any time that day, not just
-    at midnight — created_at is a timestamp and the To day used to be cut off."""
+    at midnight — created_at is a timestamp and the To day used to be cut off.
+    A note stamped 15:30 on the To day is the regression: with the old
+    `<= midnight` cut-off it disappears from the listing."""
+    user, ledger = seeded
+    afternoon = CreditNote(
+        credit_note_number="CN-2026-002",
+        ledger_id=ledger.id,
+        created_by=user.id,
+        credit_note_type="return",
+        direction="outward",
+        status="active",
+        taxable_amount=20, cgst_amount=1.8, sgst_amount=1.8, igst_amount=0,
+        total_amount=23.6,
+        created_at=datetime(2026, 6, 2, 15, 30),
+    )
+    db_session.add(afternoon)
+    db_session.commit()
+
     result = _list(client, date_from="2026-06-02", date_to="2026-06-02")
-    assert _numbers(result) == ["DN-2026-001"]
+    assert _numbers(result) == ["CN-2026-002", "DN-2026-001"]
 
 
 def test_date_range_covers_each_side_of_the_boundary(client, seeded):
