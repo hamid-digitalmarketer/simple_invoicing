@@ -94,6 +94,32 @@ def test_unfiltered_listing_returns_both(client, seeded):
     assert _numbers(result) == ["CN-2025-099", "CN-2026-001", "DN-2026-001"]
 
 
+def test_date_to_includes_the_whole_selected_day(client, seeded):
+    """date_to=2026-06-02 must cover notes created any time that day, not just
+    at midnight — created_at is a timestamp and the To day used to be cut off."""
+    result = _list(client, date_from="2026-06-02", date_to="2026-06-02")
+    assert _numbers(result) == ["DN-2026-001"]
+
+
+def test_date_range_covers_each_side_of_the_boundary(client, seeded):
+    result = _list(client, date_from="2026-06-02", date_to="2026-06-03")
+    assert _numbers(result) == ["CN-2025-099", "DN-2026-001"]
+
+
+def test_malformed_date_value_returns_422(client, seeded):
+    response = client.get("/api/credit-notes/", params={"date_to": "garbage"})
+    assert response.status_code == 422
+
+
+def test_date_from_after_date_to_returns_400(client, seeded):
+    response = client.get(
+        "/api/credit-notes/",
+        params={"date_from": "2026-06-03", "date_to": "2026-06-02"},
+    )
+    assert response.status_code == 400
+    assert "date_from must be before or equal to date_to" in response.text
+
+
 def test_search_matches_the_suppliers_own_number(client, seeded):
     result = _list(client, search="SUP/CN")
     assert _numbers(result) == ["DN-2026-001"]
